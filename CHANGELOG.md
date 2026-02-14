@@ -32,6 +32,26 @@
 ### Architecture Decisions
 <!-- Important design choices and the reasoning behind them — this is the most valuable section for onboarding developers -->
 <!-- Example: - Chose event-driven architecture with Kafka for claim lifecycle events. Rationale: decouples core engine from notifications, audit logging, and analytics. See ADR-003. -->
+ADR-001: Modular Monolith Architecture — Selected modular monolith over microservices for deployment simplicity while maintaining clean module boundaries for future service extraction. Modules communicate through explicit public APIs and domain events. Rationale: Early-stage velocity, reduced operational complexity, clear extraction path when scale demands.
+ADR-002: AWS as Primary Cloud Provider — Selected AWS over Azure/GCP for enterprise insurance market fit, compliance maturity, and service breadth. Key services: Aurora PostgreSQL, ECS Fargate, S3, MSK, EventBridge, SageMaker.
+ADR-003: Hybrid Multi-Tenancy — Row-level tenant isolation with PostgreSQL RLS as default; database-per-tenant available for enterprise tier. Balances operational efficiency with enterprise isolation requirements.
+ADR-004: Two-Tier Event Architecture — EventBridge for domain events (claim lifecycle, business triggers), MSK/Kafka for high-volume streams (audit logs, ML pipelines). Consistent CloudEvents-inspired envelope schema.
+ADR-005: TypeScript Full-Stack — NestJS (TypeScript) for main backend, Next.js for web frontends, React Native for mobile. Python services for AI/ML workloads. Full-stack type safety eliminates contract mismatches.
+ADR-006: ECS Fargate with Blue-Green Deployments — Selected ECS Fargate over EKS for operational simplicity in early stages. Blue-green deployment strategy for zero-downtime releases with fast rollback.
+ADR-007: Environment Strategy — Five core environments (local, dev, staging, production, demo) plus on-demand client sandboxes. Terraform IaC, feature flags via LaunchDarkly/AppConfig for environment-specific behavior.
+
+Added
+
+Initial system architecture documentation — docs/architecture/system-architecture.md (to be created)
+Module structure definition with 14 domain modules — src/modules/ structure defined
+CI/CD pipeline specification — GitHub Actions + CodePipeline, blue-green deployment
+
+Notes for Developers
+
+The modular monolith requires discipline: modules must not import from each other's internals. Use the exported module API or domain events only.
+Tenant context must be set on every request before any database operation. Middleware handles this, but be aware when writing tests.
+AI/ML services run as separate Fargate tasks with Python runtime. Communication is async via EventBridge/SQS.
+All infrastructure changes go through Terraform. No manual AWS console changes in staging/production.
 
 ### Database Changes
 <!-- Schema migrations, new tables, altered columns, index changes -->
